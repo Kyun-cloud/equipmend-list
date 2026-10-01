@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="출고리스트">
+<title>장비 출고 리스트</title>
+
+<style>
+:root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --muted: #8e8e93;
+    --line: #d1d1d6;
+    --field: #f7f7fa;
+    --accent: #0a84ff;
+    --accent-text: #ffffff;
+    --danger: #d70015;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #000000;
+        --card: #1c1c1e;
+        --text: #f2f2f7;
+        --muted: #8e8e93;
+        --line: #3a3a3c;
+        --field: #2c2c2e;
+        --accent: #0a84ff;
+        --accent-text: #ffffff;
+        --danger: #ff6b6b;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text: #f2f2f7;
+    --muted: #8e8e93;
+    --line: #3a3a3c;
+    --field: #2c2c2e;
+    --accent: #0a84ff;
+    --accent-text: #ffffff;
+    --danger: #ff6b6b;
+}
+
+html {
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1 { text-align: center; font-size: 24px; margin: 8px 0 16px; }
+h2 { margin: 0 0 10px; font-size: 18px; }
+
+.panel {
+    background: var(--card);
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+/* 입력창: iOS는 16px 미만이면 포커스 때 화면이 확대되므로 16px 고정 */
+input[type="text"], input[type="number"], textarea {
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 44px;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+}
+input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+label.field { display: block; font-weight: 600; margin-bottom: 6px; }
+
+button {
+    font-family: inherit;
+    font-size: 16px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    appearance: none;
+}
+button:active { opacity: 0.6; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+button.danger { color: var(--danger); }
+button.danger.confirming { background: var(--danger); border-color: var(--danger); color: #fff; }
+button.icon { min-width: 44px; padding: 8px; }
+
+.hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; line-height: 1.5; }
+
+.row { display: flex; gap: 8px; }
+.row > input { flex: 1; min-width: 0; }
+.row > button { flex: none; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tools button { flex: 1 1 140px; }
+
+/* 카테고리 카드 */
+#board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.category { background: var(--card); border-radius: 14px; padding: 14px; }
+
+.cat-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.cat-name {
+    flex: 1; min-width: 0;
+    font-size: 18px; font-weight: 700;
+    background: transparent; border-color: transparent;
+}
+.cat-name:focus { background: var(--field); border-color: var(--line); }
+
+.item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+}
+.item:first-of-type { border-top: none; }
+
+.item input[type="checkbox"] {
+    flex: none;
+    width: 26px; height: 26px;
+    margin: 0 4px 0 0;
+    accent-color: var(--accent);
+}
+.item-name {
+    flex: 1 1 130px; min-width: 0;
+    background: transparent; border-color: transparent;
+}
+.item-name:focus { background: var(--field); border-color: var(--line); }
+
+.stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+.stepper button { min-width: 40px; min-height: 40px; padding: 0; font-size: 20px; line-height: 1; }
+.stepper input[type="number"] {
+    width: 54px; min-height: 40px; padding: 4px; text-align: center;
+    -moz-appearance: textfield;
+}
+.stepper input[type="number"]::-webkit-outer-spin-button,
+.stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.add-row { margin-top: 10px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.empty-note { color: var(--muted); font-size: 14px; margin: 6px 0; }
+
+details summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+details textarea { min-height: 120px; margin-top: 8px; font-size: 14px; font-size: max(16px, 14px); }
+
+.status { margin: 8px 0 0; font-size: 14px; color: var(--muted); min-height: 20px; }
+
+#printArea { white-space: pre-wrap; font-size: 16px; line-height: 1.6; }
+
+.buttons { display: flex; flex-direction: column; gap: 10px; }
+.buttons button { width: 100%; }
+
+@media (max-width: 480px) {
+    body { padding-top: 8px; }
+    h1 { font-size: 22px; }
+}
+
+/* ===== 인쇄 ===== */
+@media print {
+    :root { --bg: #fff; --card: #fff; --text: #000; }
+    body { background: #fff; color: #000; padding: 0; max-width: none; }
+    h1, .header-box, .setup, #board, .buttons, .no-print { display: none !important; }
+    .result { padding: 0; border-radius: 0; }
+    #printArea { font-size: 12pt; line-height: 1.6; color: #000; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>장비 출고 리스트</h1>
+
+<div class="panel header-box">
+    <label class="field" for="projectName">프로젝트명</label>
+    <input type="text" id="projectName" placeholder="예: 유튜브 촬영" autocomplete="off" enterkeyhint="done">
+</div>
+
+<div class="panel setup">
+    <h2>장비 목록 관리</h2>
+    <p class="hint">카테고리와 장비를 직접 추가·수정·삭제할 수 있어요. 이름을 탭하면 바로 수정돼요. 변경 내용은 이 기기의 브라우저에 자동 저장돼요.</p>
+    <div class="row">
+        <input type="text" id="newCategory" placeholder="새 카테고리 (예: 조명)" autocomplete="off" enterkeyhint="done">
+        <button class="primary" id="addCategoryBtn">추가</button>
+    </div>
+    <div class="tools">
+        <button id="clearQtyBtn">수량 모두 0으로</button>
+        <button class="danger" id="resetBtn">기본 목록으로 초기화</button>
+    </div>
+
+    <details style="margin-top:12px;">
+        <summary>백업 / 다른 기기로 옮기기</summary>
+        <p class="hint">'내보내기'를 누르면 아래 칸에 목록이 만들어져요. 복사해서 다른 기기에 붙여넣고 '불러오기'를 누르면 같은 목록을 쓸 수 있어요.</p>
+        <textarea id="backupText" placeholder="여기에 목록 데이터가 표시되거나, 붙여넣어요" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <div class="tools">
+            <button id="exportBtn">내보내기</button>
+            <button id="copyBackupBtn">복사</button>
+            <button id="importBtn">불러오기</button>
+        </div>
+        <p class="status" id="backupStatus" role="status"></p>
+    </details>
+</div>
+
+<div id="board"></div>
+
+<div class="panel result">
+    <h2>장비리스트</h2>
+    <div id="printArea"></div>
+    <p class="status no-print" id="copyStatus" role="status"></p>
+</div>
+
+<div class="panel buttons">
+    <button class="primary" id="generateBtn">리스트 생성</button>
+    <button id="copyListBtn">장비리스트 텍스트 복사</button>
+    <button id="printBtn">PDF / 인쇄</button>
+</div>
+
+<script>
+const STORAGE_KEY = "equipmentListData_v1";
+
+/* ---------- 유틸 ---------- */
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function defaultData() {
+    return [
+        { name: "카메라", items: ["ARRI ALEXA Mini", "Sony FX3"] },
+        { name: "렌즈", items: ["Cooke S4 Set"] },
+        { name: "삼각대", items: ["Sachtler Tripod"] },
+        { name: "필터", items: ["ND Filter Set"] },
+        { name: "음향", items: ["Zoom F6 Recorder", "Wireless Mic Set"] },
+        { name: "그립장비", items: ["C-Stand"] }
+    ].map(c => ({
+        id: uid(),
+        name: c.name,
+        items: c.items.map(n => ({ id: uid(), name: n, qty: 0 }))
+    }));
+}
+
+function isValid(data) {
+    return Array.isArray(data) && data.every(c =>
+        c && typeof c.name === "string" && Array.isArray(c.items) &&
+        c.items.every(i => i && typeof i.name === "string")
+    );
+}
+
+function normalize(data) {
+    return data.map(c => ({
+        id: c.id || uid(),
+        name: c.name,
+        items: c.items.map(i => ({
+            id: i.id || uid(),
+            name: i.name,
+            qty: Math.max(0, Math.floor(Number(i.qty) || 0))
+        }))
+    }));
+}
+
+// 한글 입력(IME) 조합 중 엔터는 무시
+function isRealEnter(e) {
+    return e.key === "Enter" && !e.isComposing && e.keyCode !== 229;
+}
+
+function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(() => true).catch(() => legacyCopy(text));
+    }
+    return Promise.resolve(legacyCopy(text));
+}
+
+function legacyCopy(text) {
+    try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+    } catch (e) {
+        return false;
+    }
+}
+
+/* ---------- 상태 + 저장 ---------- */
+let state = load();
+
+function load() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isValid(parsed)) return normalize(parsed);
+        }
+    } catch (e) { /* 저장소를 못 쓰면 기본값 사용 */ }
+    return defaultData();
+}
+
+function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* 무시 */ }
+}
+
+/* ---------- 렌더링 ---------- */
+const board = document.getElementById("board");
+
+function render() {
+    board.innerHTML = "";
+    if (state.length === 0) {
+        const p = document.createElement("p");
+        p.className = "empty-note";
+        p.textContent = "카테고리가 없어요. 위에서 카테고리를 추가해 주세요.";
+        board.appendChild(p);
+        return;
+    }
+    state.forEach(cat => board.appendChild(buildCategory(cat)));
+}
+
+function buildCategory(cat) {
+    const card = document.createElement("div");
+    card.className = "category";
+    card.dataset.catId = cat.id;
+
+    const head = document.createElement("div");
+    head.className = "cat-head";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "cat-name";
+    nameInput.value = cat.name;
+    nameInput.setAttribute("aria-label", "카테고리 이름");
+    nameInput.setAttribute("enterkeyhint", "done");
+    nameInput.addEventListener("change", () => {
+        const v = nameInput.value.trim();
+        if (!v) { nameInput.value = cat.name; return; }
+        cat.name = v;
+        save();
+    });
+    nameInput.addEventListener("keydown", e => { if (isRealEnter(e)) nameInput.blur(); });
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "danger";
+    delBtn.textContent = "삭제";
+    delBtn.addEventListener("click", () => confirmClick(delBtn, () => {
+        state = state.filter(c => c.id !== cat.id);
+        save();
+        render();
+    }));
+
+    head.appendChild(nameInput);
+    head.appendChild(delBtn);
+    card.appendChild(head);
+
+    if (cat.items.length === 0) {
+        const p = document.createElement("p");
+        p.className = "empty-note";
+        p.textContent = "장비가 없어요.";
+        card.appendChild(p);
+    }
+    cat.items.forEach(item => card.appendChild(buildItem(cat, item)));
+
+    const addRow = document.createElement("div");
+    addRow.className = "add-row row";
+
+    const addInput = document.createElement("input");
+    addInput.type = "text";
+    addInput.placeholder = "장비 이름 추가";
+    addInput.autocomplete = "off";
+    addInput.setAttribute("enterkeyhint", "done");
+
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "추가";
+
+    const doAdd = () => {
+        const v = addInput.value.trim();
+        if (!v) return;
+        cat.items.push({ id: uid(), name: v, qty: 0 });
+        save();
+        render();
+        const again = board.querySelector('[data-cat-id="' + cat.id + '"] .add-row input');
+        if (again) again.focus();
+    };
+    addBtn.addEventListener("click", doAdd);
+    addInput.addEventListener("keydown", e => { if (isRealEnter(e)) doAdd(); });
+
+    addRow.appendChild(addInput);
+    addRow.appendChild(addBtn);
+    card.appendChild(addRow);
+
+    return card;
+}
+
+function buildItem(cat, item) {
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = item.qty > 0;
+    checkbox.setAttribute("aria-label", "출고 선택");
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "item-name";
+    nameInput.value = item.name;
+    nameInput.setAttribute("aria-label", "장비 이름");
+    nameInput.setAttribute("enterkeyhint", "done");
+
+    // 수량 스테퍼: − [수량] +
+    const stepper = document.createElement("div");
+    stepper.className = "stepper";
+
+    const minus = document.createElement("button");
+    minus.textContent = "−";
+    minus.setAttribute("aria-label", "수량 감소");
+
+    const qty = document.createElement("input");
+    qty.type = "number";
+    qty.min = "0";
+    qty.step = "1";
+    qty.inputMode = "numeric";
+    qty.value = item.qty;
+    qty.setAttribute("aria-label", "수량");
+
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    plus.setAttribute("aria-label", "수량 증가");
+
+    stepper.appendChild(minus);
+    stepper.appendChild(qty);
+    stepper.appendChild(plus);
+
+    const del = document.createElement("button");
+    del.className = "danger icon";
+    del.textContent = "✕";
+    del.setAttribute("aria-label", "장비 삭제");
+
+    const setQty = n => {
+        item.qty = Math.max(0, Math.floor(Number(n) || 0));
+        qty.value = item.qty;
+        checkbox.checked = item.qty > 0;
+        save();
+    };
+
+    checkbox.addEventListener("change", () => setQty(checkbox.checked ? Math.max(1, item.qty) : 0));
+    minus.addEventListener("click", () => setQty(item.qty - 1));
+    plus.addEventListener("click", () => setQty(item.qty + 1));
+
+    // 직접 입력 중에는 값을 덮어쓰지 않고 상태만 갱신
+    qty.addEventListener("input", () => {
+        item.qty = Math.max(0, Math.floor(Number(qty.value) || 0));
+        checkbox.checked = item.qty > 0;
+        save();
+    });
+    qty.addEventListener("blur", () => { qty.value = item.qty; });
+
+    nameInput.addEventListener("change", () => {
+        const v = nameInput.value.trim();
+        if (!v) { nameInput.value = item.name; return; }
+        item.name = v;
+        save();
+    });
+    nameInput.addEventListener("keydown", e => { if (isRealEnter(e)) nameInput.blur(); });
+
+    del.addEventListener("click", () => {
+        cat.items = cat.items.filter(i => i.id !== item.id);
+        save();
+        render();
+    });
+
+    row.appendChild(checkbox);
+    row.appendChild(nameInput);
+    row.appendChild(stepper);
+    row.appendChild(del);
+    return row;
+}
+
+// 두 번 눌러야 실행되는 확인 방식 (alert/confirm이 막히는 환경 대비)
+function confirmClick(btn, action) {
+    if (btn.classList.contains("confirming")) {
+        action();
+        return;
+    }
+    const original = btn.textContent;
+    btn.classList.add("confirming");
+    btn.textContent = "정말 삭제?";
+    setTimeout(() => {
+        if (btn.isConnected) {
+            btn.classList.remove("confirming");
+            btn.textContent = original;
+        }
+    }, 3000);
+}
+
+/* ---------- 카테고리 추가 ---------- */
+const newCategoryInput = document.getElementById("newCategory");
+
+function addCategory() {
+    const v = newCategoryInput.value.trim();
+    if (!v) return;
+    state.push({ id: uid(), name: v, items: [] });
+    newCategoryInput.value = "";
+    save();
+    render();
+}
+document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
+newCategoryInput.addEventListener("keydown", e => { if (isRealEnter(e)) addCategory(); });
+
+/* ---------- 도구 버튼 ---------- */
+document.getElementById("clearQtyBtn").addEventListener("click", () => {
+    state.forEach(c => c.items.forEach(i => { i.qty = 0; }));
+    save();
+    render();
+});
+
+const resetBtn = document.getElementById("resetBtn");
+resetBtn.addEventListener("click", () => {
+    if (!resetBtn.classList.contains("confirming")) {
+        resetBtn.dataset.label = resetBtn.textContent;
+        resetBtn.classList.add("confirming");
+        resetBtn.textContent = "정말 초기화?";
+        setTimeout(() => {
+            resetBtn.classList.remove("confirming");
+            resetBtn.textContent = resetBtn.dataset.label || "기본 목록으로 초기화";
+        }, 3000);
+        return;
+    }
+    state = defaultData();
+    save();
+    render();
+    resetBtn.classList.remove("confirming");
+    resetBtn.textContent = resetBtn.dataset.label || "기본 목록으로 초기화";
+});
+
+/* ---------- 백업 / 복원 (복사·붙여넣기 방식) ---------- */
+const backupText = document.getElementById("backupText");
+const backupStatus = document.getElementById("backupStatus");
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+    backupText.value = JSON.stringify(state);
+    backupStatus.textContent = "목록 데이터를 만들었어요. '복사'를 눌러 보관하세요.";
+});
+
+document.getElementById("copyBackupBtn").addEventListener("click", async () => {
+    if (!backupText.value) backupText.value = JSON.stringify(state);
+    const ok = await copyText(backupText.value);
+    if (!ok) {
+        backupText.focus();
+        backupText.select();
+    }
+    backupStatus.textContent = ok ? "복사했어요." : "자동 복사가 안 돼서 선택해 뒀어요. 직접 복사해 주세요.";
+});
+
+document.getElementById("importBtn").addEventListener("click", () => {
+    try {
+        const parsed = JSON.parse(backupText.value.trim());
+        if (!isValid(parsed)) throw new Error("형식 오류");
+        state = normalize(parsed);
+        save();
+        render();
+        backupStatus.textContent = "목록을 불러왔어요.";
+    } catch (e) {
+        backupStatus.textContent = "올바른 목록 데이터가 아니에요. 내보내기로 만든 내용을 그대로 붙여넣어 주세요.";
+    }
+});
+
+/* ---------- 장비리스트 ---------- */
+const printArea = document.getElementById("printArea");
+const copyStatus = document.getElementById("copyStatus");
+
+function generateList() {
+    const project = document.getElementById("projectName").value.trim() || "-";
+    let result = "■ 프로젝트 : " + project + "\n\n";
+    let hasItems = false;
+
+    state.forEach(cat => {
+        const picked = cat.items.filter(i => i.qty > 0);
+        if (picked.length === 0) return;
+        hasItems = true;
+        result += "[" + cat.name + "]\n";
+        picked.forEach(i => { result += "- " + i.name + " x " + i.qty + "\n"; });
+        result += "\n";
+    });
+
+    if (!hasItems) result += "(선택된 장비가 없습니다)\n";
+
+    printArea.innerText = result;
+    copyStatus.textContent = "";
+    return result;
+}
+
+document.getElementById("generateBtn").addEventListener("click", generateList);
+
+document.getElementById("copyListBtn").addEventListener("click", async () => {
+    const text = generateList();
+    const ok = await copyText(text);
+    copyStatus.textContent = ok ? "장비리스트를 복사했어요. 메모·메시지 앱에 붙여넣을 수 있어요." : "자동 복사가 안 됐어요. 위 장비리스트를 길게 눌러 직접 복사해 주세요.";
+});
+
+document.getElementById("printBtn").addEventListener("click", () => {
+    generateList();
+    try { window.print(); } catch (e) {
+        copyStatus.textContent = "이 화면에서는 인쇄가 안 돼요. 브라우저(Safari) 공유 메뉴의 '프린트'를 이용해 주세요.";
+    }
+});
+
+/* ---------- 시작 ---------- */
+render();
+</script>
+
+</body>
+</html>
